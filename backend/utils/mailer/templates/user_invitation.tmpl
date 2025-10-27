@@ -1,0 +1,94 @@
+{{define "subject"}} Activate your account {{end}}
+
+{{define "body"}}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Activate Your Account</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #f9f9f9;
+      font-family: Arial, sans-serif;
+    }
+    .email-container {
+      max-width: 600px;
+      margin: 20px auto;
+      background-color: #ffffff;
+      border: 1px solid #dddddd;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .header {
+      background-color: #007BFF;
+      color: #ffffff;
+      padding: 20px;
+      text-align: center;
+    }
+    .body {
+      padding: 20px;
+      color: #333333;
+      line-height: 1.6;
+    }
+    .footer {
+      background-color: #f9f9f9;
+      color: #777777;
+      padding: 10px;
+      text-align: center;
+      font-size: 12px;
+    }
+    .button {
+      display: inline-block;
+      background-color: #007BFF;
+      color: #ffffff;
+      padding: 12px 24px;
+      text-decoration: none;
+      border-radius: 4px;
+      margin: 20px 0;
+    }
+    .button:hover {
+      background-color: #0056b3;
+    }
+    a {
+      color: #007BFF;
+      text-decoration: none;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="email-container">
+    <!-- Header -->
+    <div class="header">
+      <h1>Activate Your Account</h1>
+    </div>
+
+    <!-- Body -->
+    <div class="body">
+      <p>Hi <strong>{{.Username}}</strong>,</p>
+      <p>Thank you for registering with us! To complete your account setup, please confirm your email address by clicking the button below:</p>
+      <p style="text-align: center;">
+        <a href="{{.ActivationURL}}" class="button">Activate My Account</a>
+      </p>
+      <p>If the button above doesn’t work, copy and paste the following link into your browser:</p>
+      <p><a href="{{.ActivationURL}}">{{.ActivationURL}}</a></p>
+      <p>This link will expire in 24 hours. If you did not sign up for this account, please ignore this email.</p>
+      <p>Welcome aboard!<br>The Blogger Spot Team</p>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      <p>&copy; 2024 Blogger Spot. All rights reserved.</p>
+      <p>If you need assistance, contact us at <a href="mailto:bloggerspot@queries.com">bloggerspot@queries.com</a>.</p>
+    </div>
+  </div>
+</body>
+</html>
+
+{{end}}

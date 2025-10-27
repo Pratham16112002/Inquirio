@@ -1,0 +1,2 @@
+CREATE EXTENSION IF NOT exists citext;
+CREATE DATABASE inquiro_db;
