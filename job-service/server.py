@@ -19,11 +19,17 @@ class JobServiceServicer(job_pb2_grpc.JobServiceServicer):
 
     def ParseResume(self, request, context):
         # Parsing the resume
-        resume_text = self.processor.process_raw_resume(request.resume_file_content,context)
-        parsed_data = self.parser.parse(resume_text,context)
         response = job_pb2.ParseResumeResponse()
-        response.job_titles = parsed_data.job_titles
-        response.skills = parsed_data.skills
+        resume_text = self.processor.process_raw_resume(request.resume_file_content,context)
+        if resume_text is None:
+            return response
+        parsed_data = self.parser.parse(resume_text,context)
+        if parsed_data is None:
+            context.set_code(grpc.StatusCode.UNAVAILABLE)
+            context.set_details("No data extracted from the resume")
+            return response
+        response.job_titles.extend(parsed_data.job_titles)
+        response.skills.extend(parsed_data.skills)
         response.experience = parsed_data.experience
         return response
 

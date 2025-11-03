@@ -12,3 +12,8 @@ generate-proto:
 	@echo "Generating Python gRPC code for job.proto..."
 	$(VENV_PYTHON) -m grpc_tools.protoc -I protos --python_out=. --pyi_out=. --grpc_python_out=. protos/job.proto
 	@echo "Done."
+
+run:
+	@echo "Running the server..."
+	$(VENV_PYTHON) server.py
+	@echo "Done."

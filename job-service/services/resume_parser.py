@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 # --- Pydantic Model for Structured Output ---
 class ResumeData(BaseModel):
     """Structured data extracted from a resume."""
-    job_title: List[str] = Field(default_=[], description="Extracted job titles.")
+    job_titles: List[str] = Field(default_=[], description="Extracted job titles.")
     skills: List[str] = Field(default_=[], description="Extracted skills.")
     experience: str = Field(default="", description="A summary of the work experience.")
 
@@ -71,8 +71,9 @@ class ResumeParser:
         """
         if not resume_text:
             logger.warning("Input resume text is empty.")
-            context.abort(grpc.StatusCode.INVALID_ARGUMENT, "File has nothing to process")
-            return ResumeData()
+            context.set_code(grpc.StatusCode.NOT_FOUND)
+            context.set_details("File has nothing to process")
+            return None
 
         # 1. Clean the text using the utility
         cleaned_context = clean_text(resume_text)
