@@ -23,10 +23,11 @@ var (
 	ErrUserNotFound      = errors.New("user not found")
 	ErrDuplicateEmail    = errors.New("email already registered")
 	ErrDuplicateUsername = errors.New("duplicate username")
+	InvitationExpiryTime = 50 * time.Minute
 )
 
 func (u *UserRepository) FindByEmail(ctx context.Context, email string) (*models.User, error) {
-	row := u.DB.QueryRowContext(ctx, "SELECT * FROM users WHERE email = $1", email)
+	row := u.DB.QueryRowContext(ctx, "SELECT id, username, first_name, last_name, provider, provider_id, password, email FROM users WHERE email = $1", email)
 	user := &models.User{}
 	err := row.Scan(&user.ID, &user.Username, &user.FirstName, &user.LastName, &user.Provider, &user.ProviderID, &user.Password, &user.Email)
 	if err != nil {
@@ -89,7 +90,7 @@ func (u *UserRepository) createInvitation(tx *sql.Tx, ctx context.Context, userI
 	ctx, cancel := context.WithTimeout(ctx, QueryTimeOut)
 	defer cancel()
 
-	row := tx.QueryRowContext(ctx, "INSERT INTO user_invitations (id,user_id, token) VALUES ($1, $2,$3) RETURNING id,created_at", uuid.New(), userId, token)
+	row := tx.QueryRowContext(ctx, "INSERT INTO user_invitations (id,user_id, token,expiry) VALUES ($1, $2,$3,$4) RETURNING id,created_at", uuid.New(), userId, token, time.Now().Add(InvitationExpiryTime))
 	if row.Err() != nil {
 		return row.Err()
 	}
@@ -160,6 +161,19 @@ func (u *UserRepository) update(tx *sql.Tx, ctx context.Context, user *models.Us
 		return err
 	}
 	return nil
+}
+
+func (u *UserRepository) GetByEmail(ctx context.Context, email string) (*models.User, error) {
+	row := u.DB.QueryRowContext(ctx, "SELECT id, username, first_name, last_name, is_active , is_verified, password, email FROM users WHERE email = $1", email)
+	user := &models.User{}
+	err := row.Scan(&user.ID, &user.Username, &user.FirstName, &user.LastName, &user.IsActive, &user.IsVerified, &user.Password, &user.Email)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, ErrUserNotFound
+		}
+		return nil, err
+	}
+	return user, nil
 }
 
 func (u *UserRepository) deleteInvitation(tx *sql.Tx, ctx context.Context, userId uuid.UUID) error {

@@ -43,3 +43,18 @@ func (u UserServices) ActivateUser(ctx context.Context, token string) error {
 func (u UserServices) RegisterUser(ctx context.Context, user *models.User, token string) error {
 	return u.repo.Users.CreateAndInvite(ctx, token, user)
 }
+
+func (u UserServices) GetUserByEmail(ctx context.Context, email string) (*models.User, error) {
+	user, err := u.repo.Users.GetByEmail(ctx, email)
+	if err != nil {
+		return nil, err
+	}
+	return user, nil
+}
+
+func (u UserServices) AuthenticatePassword(ctx context.Context, user *models.User, pass string) error {
+	if err := user.Password.Compare(pass); err != nil {
+		return err
+	}
+	return nil
+}

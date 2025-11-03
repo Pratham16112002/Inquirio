@@ -1,0 +1,32 @@
+    syntax = "proto3";
+
+package job;
+
+option go_package = "Inqurio/jobpb;jobpb";
+
+service JobService {
+    rpc ParseResume(ParseResumeRequest) returns (ParseResumeResponse) {};
+    rpc CalculateRelevancy(CalculateRelevancyRequest) returns (CalculateRelevancyResponse) {};
+}
+
+message ParseResumeRequest {
+    bytes resume_file_content = 1;
+    string file_name = 2;
+}
+
+message ParseResumeResponse {
+    string job_titles = 1;
+    string skills = 2;
+    string experience = 3;
+}
+
+message CalculateRelevancyRequest {
+    repeated string resume_skills = 1;
+    string resume_experience = 2;
+
+    string job_description = 3;
+}
+
+message CalculateRelevancyResponse {
+    double relevancy_score = 1;
+}

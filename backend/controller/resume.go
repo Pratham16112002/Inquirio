@@ -1,0 +1,52 @@
+package controller
+
+import (
+	"Inquiro/config"
+	jobpb "Inquiro/protos"
+	"Inquiro/services"
+	"Inquiro/utils/response"
+	"io"
+	"net/http"
+)
+
+type Resume struct {
+	srv services.Service
+	cfg config.Application
+}
+
+func (u Resume) ProcessResume(w http.ResponseWriter, r *http.Request) {
+	err := r.ParseMultipartForm(10 << 20)
+	if err != nil {
+		u.cfg.Logger.Warnw("Bad request", "error : ", err.Error())
+		response.Error(w, r, "Bad request", "File too large", 400, http.StatusBadRequest)
+		return
+	}
+	file, header, err := r.FormFile("resume")
+	if err != nil {
+		u.cfg.Logger.Warnw("Could not find resume in request", "error : ", err.Error())
+		response.Error(w, r, "Bad request", "File not found", 400, http.StatusBadRequest)
+		return
+	}
+	defer file.Close()
+
+	fileBytes, err := io.ReadAll(file)
+
+	if err != nil {
+		u.cfg.Logger.Warnw("Could not read file", "error : ", err.Error())
+		response.Error(w, r, "File unreadable", "Could not read the file content", 400, http.StatusBadRequest)
+		return
+	}
+	u.cfg.Logger.Infow("Reading file successfull, sending to python service", "filename", header.Filename, "size", len(fileBytes))
+	ctx := r.Context()
+	res, err := u.cfg.Grpc.ParseResume(ctx, &jobpb.ParseResumeRequest{
+		ResumeFileContent: fileBytes,
+		FileName:          header.Filename,
+	})
+	u.cfg.Logger.Infow("Response from python service", "response", res)
+	if err != nil {
+		u.cfg.Logger.Warnw("Could not send request to python service", "error : ", err.Error())
+		response.Error(w, r, "Could not send request to python service", "Could not send request to python service", 500, http.StatusInternalServerError)
+		return
+	}
+
+}

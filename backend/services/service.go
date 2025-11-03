@@ -15,6 +15,8 @@ type Service struct {
 		CheckEmailExists(ctx context.Context, email string) (bool, error)
 		RegisterUser(ctx context.Context, user *models.User, token string) error
 		ActivateUser(ctx context.Context, token string) error
+		GetUserByEmail(ctx context.Context, email string) (*models.User, error)
+		AuthenticatePassword(ctx context.Context, user *models.User, pass *models.PasswordType) error
 	}
 }
 

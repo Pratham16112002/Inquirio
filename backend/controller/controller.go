@@ -12,6 +12,9 @@ type Controller struct {
 		Login(w http.ResponseWriter, r *http.Request)
 		Activate(w http.ResponseWriter, r *http.Request)
 	}
+	Resume interface {
+		ProcessResume(w http.ResponseWriter, r *http.Request)
+	}
 }
 
 func NewController(service services.Service, cfg config.Application) Controller {

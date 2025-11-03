@@ -6,6 +6,7 @@ import (
 	"Inquiro/config/env"
 	"Inquiro/controller"
 	"Inquiro/db"
+	jobpb "Inquiro/protos"
 	"Inquiro/repositories"
 	"Inquiro/routes"
 	"Inquiro/services"
@@ -16,6 +17,12 @@ import (
 	"github.com/alexedwards/scs/v2"
 	"github.com/go-chi/chi/v5"
 	"go.uber.org/zap"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
+)
+
+const (
+	PythonServerAddress = "localhost:50051"
 )
 
 func main() {
@@ -35,15 +42,22 @@ func main() {
 			FromEmail: env.GetString("RESEND_FROM_EMAIL", "support@bloggerspot.xyz"),
 		},
 	}
-
+	conn, err := grpc.NewClient(PythonServerAddress, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		logger.Fatalf("failed to connect to job service: %v", err.Error())
+	}
+	defer conn.Close()
+	grpcClient := jobpb.NewJobServiceClient(conn)
 	mailer := mailer.NewResendClient(configuration.MailConfig.APIKey, configuration.MailConfig.FromEmail, logger)
 
 	cfg := config.Application{
 		Config: configuration,
 		Mail:   mailer,
 		Logger: logger,
+		Grpc:   grpcClient,
 	}
 	defer logger.Sync()
+
 	db, err := db.NewDB(cfg.Logger,
 		cfg.Config.DBConfig.Host,
 		cfg.Config.DBConfig.User,
@@ -72,8 +86,10 @@ func main() {
 	sessionManager := scs.New()
 	sessionManager.Lifetime = 24 * time.Hour
 	r.Use(sessionManager.LoadAndSave)
+	cfg.Session = sessionManager
 	r.Mount("/api", apiRouter)
 	cfg.Auth = auth.NewAuth(cfg.Store, sessionManager)
+
 	Run(cfg, r)
 
 }

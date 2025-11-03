@@ -1,0 +1,12 @@
+grpcio
+grpcio-tools
+protobuf
+chromadb
+sentence-transformers
+PyPDF2
+spacy
+pydantic
+python-docx
+pdfminer.six
+transformers
+torch

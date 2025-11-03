@@ -19,6 +19,7 @@ type Storage struct {
 		getUserFromToken(tx *sql.Tx, ctx context.Context, token string) (*models.User, error)
 		update(tx *sql.Tx, ctx context.Context, user *models.User) error
 		deleteInvitation(tx *sql.Tx, ctx context.Context, userId uuid.UUID) error
+		GetByEmail(ctx context.Context, email string) (*models.User, error)
 	}
 }
 
