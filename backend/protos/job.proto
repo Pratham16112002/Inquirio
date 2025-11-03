@@ -15,8 +15,8 @@ message ParseResumeRequest {
 }
 
 message ParseResumeResponse {
-    string job_titles = 1;
-    string skills = 2;
+    repeated string job_titles = 1;
+    repeated string skills = 2;
     string experience = 3;
 }
 

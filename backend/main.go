@@ -43,6 +43,7 @@ func main() {
 		},
 	}
 	conn, err := grpc.NewClient(PythonServerAddress, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	logger.Infow("Connecting to python service", "address : ", PythonServerAddress)
 	if err != nil {
 		logger.Fatalf("failed to connect to job service: %v", err.Error())
 	}
@@ -74,14 +75,20 @@ func main() {
 
 	// Handling users
 	logger.Infof("registering user routes")
-	userService := services.NewService(
+	srv := services.NewService(
 		cfg.Store,
 		cfg.Logger,
 		cfg.Mail,
 	)
-	userController := controller.NewController(userService, cfg)
+	userController := controller.NewController(srv, cfg)
 	userRoutes := routes.NewUserRoutes(userController)
 	userRoutes.RegisterUserRoutes(apiRouter)
+
+	// Handling resumes
+	logger.Infof("regiter resume routes")
+	resumeController := controller.NewController(srv, cfg)
+	resumeRoutes := routes.NewResumeRoutes(resumeController)
+	resumeRoutes.RegisterResumeRoutes(apiRouter)
 
 	sessionManager := scs.New()
 	sessionManager.Lifetime = 24 * time.Hour

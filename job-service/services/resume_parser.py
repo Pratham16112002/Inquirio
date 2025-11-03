@@ -2,9 +2,11 @@
 import os
 import logging
 from typing import List
+import grpc
 from pydantic import BaseModel, Field
 from transformers import pipeline, AutoTokenizer, AutoModelForQuestionAnswering
 from utils.text_cleaner import clean_text
+import re
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -13,7 +15,7 @@ logger = logging.getLogger(__name__)
 # --- Pydantic Model for Structured Output ---
 class ResumeData(BaseModel):
     """Structured data extracted from a resume."""
-    job_titles: List[str] = Field(default_=[], description="Extracted job titles.")
+    job_title: List[str] = Field(default_=[], description="Extracted job titles.")
     skills: List[str] = Field(default_=[], description="Extracted skills.")
     experience: str = Field(default="", description="A summary of the work experience.")
 
@@ -57,7 +59,7 @@ class ResumeParser:
             logger.error(f"Error during model query for question '{question}': {e}", exc_info=True)
             return ""
 
-    def parse(self, resume_text: str) -> ResumeData:
+    def parse(self, resume_text: str,context) -> ResumeData:
         """
         Parses the raw text of a resume to extract structured data.
 
@@ -69,6 +71,7 @@ class ResumeParser:
         """
         if not resume_text:
             logger.warning("Input resume text is empty.")
+            context.abort(grpc.StatusCode.INVALID_ARGUMENT, "File has nothing to process")
             return ResumeData()
 
         # 1. Clean the text using the utility

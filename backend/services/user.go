@@ -52,8 +52,8 @@ func (u UserServices) GetUserByEmail(ctx context.Context, email string) (*models
 	return user, nil
 }
 
-func (u UserServices) AuthenticatePassword(ctx context.Context, user *models.User, pass string) error {
-	if err := user.Password.Compare(pass); err != nil {
+func (u UserServices) AuthenticatePassword(ctx context.Context, user *models.User, pass *models.PasswordType) error {
+	if err := user.Password.Compare(*pass.Text); err != nil {
 		return err
 	}
 	return nil

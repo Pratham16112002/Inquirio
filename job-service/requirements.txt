@@ -10,3 +10,4 @@ python-docx
 pdfminer.six
 transformers
 torch
+pdfminer

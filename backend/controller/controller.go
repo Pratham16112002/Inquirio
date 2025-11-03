@@ -23,5 +23,9 @@ func NewController(service services.Service, cfg config.Application) Controller 
 			srv: service,
 			cfg: cfg,
 		},
+		Resume: Resume{
+			srv: service,
+			cfg: cfg,
+		},
 	}
 }
