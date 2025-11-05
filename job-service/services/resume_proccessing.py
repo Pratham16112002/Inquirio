@@ -19,7 +19,7 @@ class ResumeProcessor:
         if len(file_bytes) > self.maxi_allowed_bytes:
             logging.info("File exceeded the maximum allowed bytes")
             context.abort(grpc.StatusCode.RESOURCE_EXHAUSTED, "File too large")
-            return
+            return None
         
         # Convertion of the raw bytes to a string
         try:
@@ -35,8 +35,9 @@ class ResumeProcessor:
             text = extract_pdf_text(pdf_file_in_memory)
         except Exception as e:
             logging.info("Error failed to parse the file content {e}")
-            context.abort(grpc.StatusCode.INVALID_ARGUMENT, "File not in UTF-8 format")
-            return
+            context.set_code(grpc.StatusCode.INTERNAL)
+            context.set_details("Failed to parse the file content")
+            return None
         
 
         return text

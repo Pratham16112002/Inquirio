@@ -7,6 +7,8 @@ import (
 	"Inquiro/utils/response"
 	"io"
 	"net/http"
+
+	"google.golang.org/grpc/status"
 )
 
 type Resume struct {
@@ -45,8 +47,10 @@ func (u Resume) ProcessResume(w http.ResponseWriter, r *http.Request) {
 	u.cfg.Logger.Infow("Response from python service", "response", res)
 	if err != nil {
 		u.cfg.Logger.Warnw("Could not send request to python service", "error : ", err.Error())
-		response.Error(w, r, "Could not send request to python service", "Could not send request to python service", 500, http.StatusInternalServerError)
+		st, _ := status.FromError(err)
+		response.Error(w, r, "File not processed", st.Message(), int(status.Code(err)), http.StatusInternalServerError)
 		return
 	}
+	response.Success(w, r, "File proccessed", nil, http.StatusOK)
 
 }
