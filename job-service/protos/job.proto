@@ -15,7 +15,7 @@ message ParseResumeRequest {
 message ParseResumeResponse {
     repeated string job_titles = 1;
     repeated string skills = 2;
-    string experience = 3;
+    int32 experience = 3;
 }
 
 message CalculateRelevancyRequest {

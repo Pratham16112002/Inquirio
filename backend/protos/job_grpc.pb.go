@@ -4,7 +4,7 @@
 // - protoc             v6.33.0
 // source: protos/job.proto
 
-package jobpb
+package protos
 
 import (
 	context "context"

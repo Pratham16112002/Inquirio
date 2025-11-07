@@ -4,7 +4,7 @@
 // 	protoc        v6.33.0
 // source: protos/job.proto
 
-package jobpb
+package protos
 
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
@@ -75,9 +75,9 @@ func (x *ParseResumeRequest) GetFileName() string {
 
 type ParseResumeResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	JobTitles     string                 `protobuf:"bytes,1,opt,name=job_titles,json=jobTitles,proto3" json:"job_titles,omitempty"`
-	Skills        string                 `protobuf:"bytes,2,opt,name=skills,proto3" json:"skills,omitempty"`
-	Experience    string                 `protobuf:"bytes,3,opt,name=experience,proto3" json:"experience,omitempty"`
+	JobTitles     []string               `protobuf:"bytes,1,rep,name=job_titles,json=jobTitles,proto3" json:"job_titles,omitempty"`
+	Skills        []string               `protobuf:"bytes,2,rep,name=skills,proto3" json:"skills,omitempty"`
+	Experience    int32                  `protobuf:"varint,3,opt,name=experience,proto3" json:"experience,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -112,25 +112,25 @@ func (*ParseResumeResponse) Descriptor() ([]byte, []int) {
 	return file_protos_job_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *ParseResumeResponse) GetJobTitles() string {
+func (x *ParseResumeResponse) GetJobTitles() []string {
 	if x != nil {
 		return x.JobTitles
 	}
-	return ""
+	return nil
 }
 
-func (x *ParseResumeResponse) GetSkills() string {
+func (x *ParseResumeResponse) GetSkills() []string {
 	if x != nil {
 		return x.Skills
 	}
-	return ""
+	return nil
 }
 
-func (x *ParseResumeResponse) GetExperience() string {
+func (x *ParseResumeResponse) GetExperience() int32 {
 	if x != nil {
 		return x.Experience
 	}
-	return ""
+	return 0
 }
 
 type CalculateRelevancyRequest struct {
@@ -247,10 +247,10 @@ const file_protos_job_proto_rawDesc = "" +
 	"\tfile_name\x18\x02 \x01(\tR\bfileName\"l\n" +
 	"\x13ParseResumeResponse\x12\x1d\n" +
 	"\n" +
-	"job_titles\x18\x01 \x01(\tR\tjobTitles\x12\x16\n" +
-	"\x06skills\x18\x02 \x01(\tR\x06skills\x12\x1e\n" +
+	"job_titles\x18\x01 \x03(\tR\tjobTitles\x12\x16\n" +
+	"\x06skills\x18\x02 \x03(\tR\x06skills\x12\x1e\n" +
 	"\n" +
-	"experience\x18\x03 \x01(\tR\n" +
+	"experience\x18\x03 \x01(\x05R\n" +
 	"experience\"\x96\x01\n" +
 	"\x19CalculateRelevancyRequest\x12#\n" +
 	"\rresume_skills\x18\x01 \x03(\tR\fresumeSkills\x12+\n" +
@@ -261,7 +261,7 @@ const file_protos_job_proto_rawDesc = "" +
 	"\n" +
 	"JobService\x12B\n" +
 	"\vParseResume\x12\x17.job.ParseResumeRequest\x1a\x18.job.ParseResumeResponse\"\x00\x12W\n" +
-	"\x12CalculateRelevancy\x12\x1e.job.CalculateRelevancyRequest\x1a\x1f.job.CalculateRelevancyResponse\"\x00B\x15Z\x13Inqurio/jobpb;jobpbb\x06proto3"
+	"\x12CalculateRelevancy\x12\x1e.job.CalculateRelevancyRequest\x1a\x1f.job.CalculateRelevancyResponse\"\x00B\x11Z\x0f./protos;protosb\x06proto3"
 
 var (
 	file_protos_job_proto_rawDescOnce sync.Once

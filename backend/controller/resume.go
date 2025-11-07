@@ -2,7 +2,7 @@ package controller
 
 import (
 	"Inquiro/config"
-	jobpb "Inquiro/protos"
+	"Inquiro/protos"
 	"Inquiro/services"
 	"Inquiro/utils/response"
 	"io"
@@ -40,17 +40,24 @@ func (u Resume) ProcessResume(w http.ResponseWriter, r *http.Request) {
 	}
 	u.cfg.Logger.Infow("Reading file successfull, sending to python service", "filename", header.Filename, "size", len(fileBytes))
 	ctx := r.Context()
-	res, err := u.cfg.Grpc.ParseResume(ctx, &jobpb.ParseResumeRequest{
+	res, err := u.cfg.Grpc.ParseResume(ctx, &protos.ParseResumeRequest{
 		ResumeFileContent: fileBytes,
 		FileName:          header.Filename,
 	})
-	u.cfg.Logger.Infow("Response from python service", "response", res)
 	if err != nil {
 		u.cfg.Logger.Warnw("Could not send request to python service", "error : ", err.Error())
 		st, _ := status.FromError(err)
 		response.Error(w, r, "File not processed", st.Message(), int(status.Code(err)), http.StatusInternalServerError)
 		return
 	}
-	response.Success(w, r, "File proccessed", nil, http.StatusOK)
+	response.Success(w, r, "File proccessed", struct {
+		JobTitles  []string `json:"job_titles"`
+		Skills     []string `json:"skills"`
+		Experience int32    `json:"experience"`
+	}{
+		JobTitles:  res.JobTitles,
+		Skills:     res.Skills,
+		Experience: res.Experience,
+	}, http.StatusOK)
 
 }

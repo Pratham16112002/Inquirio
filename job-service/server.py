@@ -28,8 +28,8 @@ class JobServiceServicer(job_pb2_grpc.JobServiceServicer):
             context.set_code(grpc.StatusCode.UNAVAILABLE)
             context.set_details("No data extracted from the resume")
             return response
-        response.job_titles.extend(parsed_data.job_titles)
-        response.skills.extend(parsed_data.skills)
+        response.job_titles.extend(parsed_data.job_titles or [])
+        response.skills.extend(parsed_data.skills or [])
         response.experience = parsed_data.experience
         return response
 

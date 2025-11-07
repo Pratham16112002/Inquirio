@@ -1,12 +1,12 @@
-
 import os
+import json
 import logging
 from typing import List
 import grpc
-from pydantic import BaseModel, Field
-from transformers import pipeline, AutoTokenizer, AutoModelForQuestionAnswering
-from utils.text_cleaner import clean_text
+import requests
 import re
+from pydantic import BaseModel, Field
+from utils.text_cleaner import clean_resume_text
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -15,130 +15,126 @@ logger = logging.getLogger(__name__)
 # --- Pydantic Model for Structured Output ---
 class ResumeData(BaseModel):
     """Structured data extracted from a resume."""
-    job_titles: List[str] = Field(default_=[], description="Extracted job titles.")
-    skills: List[str] = Field(default_=[], description="Extracted skills.")
-    experience: str = Field(default="", description="A summary of the work experience.")
+    job_titles: List[str] = Field(default_factory=list, description="Extracted job titles.")
+    skills: List[str] = Field(default_factory=list, description="Extracted skills.")
+    experience: int = Field(default=0, description="A summary of the work experience.")
 
-# --- Resume Parser Service ---
+# --- Resume Parser using Local Ollama ---
 class ResumeParser:
-    """
-    A service to parse resumes and extract key information using a Hugging Face
-    Question-Answering model.
-    """
-    def __init__(self, model_name: str = None):
+    def __init__(self, model_name: str = "llama3.1:latest"):
         """
-        Initializes the parser and loads the QA model.
-        
-        Args:
-            model_name (str, optional): The name of the Hugging Face model to use.
-                                        Defaults to the one specified in the
-                                        RESUME_MODEL environment variable or a default.
+        Uses a local Ollama model to extract structured data from resumes.
+        """
+        self.model_name = model_name
+        self.api_url = "http://localhost:11434/api/generate"
+        logger.info(f"Ollama model set to: {self.model_name}")
+
+    def _query_ollama(self, prompt: str) -> str:
+        """
+        Sends a request to the local Ollama server.
         """
         try:
-            model_name = model_name or os.getenv("RESUME_MODEL", "distilbert-base-cased-distilled-squad")
-            logger.info(f"Loading model: {model_name}")
+            payload = {
+                "model": self.model_name,
+                "prompt": prompt,
+                "stream": False
+            }
 
-            # Load the model and tokenizer
-            tokenizer = AutoTokenizer.from_pretrained(model_name)
-            model = AutoModelForQuestionAnswering.from_pretrained(model_name)
+            response = requests.post(self.api_url, json=payload)
+            response.raise_for_status()
 
-            # Set up the QA pipeline
-            self.nlp = pipeline("question-answering", model=model, tokenizer=tokenizer)
-            logger.info("ResumeParser initialized successfully.")
+            # Ollama returns: {"model":"...","created_at":"...","response":"..."}
+            data = response.json()
+            return data.get("response", "")
 
         except Exception as e:
-            logger.error(f"Failed to load model or tokenizer: {e}", exc_info=True)
-            raise
-
-    def _query_model(self, question: str, context: str) -> str:
-        """Sends a question and context to the QA model and returns the answer."""
-        try:
-            result = self.nlp(question=question, context=context)
-            return result['answer']
-        except Exception as e:
-            logger.error(f"Error during model query for question '{question}': {e}", exc_info=True)
+            logger.error(f"Error communicating with Ollama: {e}", exc_info=True)
             return ""
 
-    def parse(self, resume_text: str,context) -> ResumeData:
-        """
-        Parses the raw text of a resume to extract structured data.
-
-        Args:
-            resume_text (str): The full text content of the resume.
-
-        Returns:
-            ResumeData: A Pydantic model containing the extracted information.
-        """
+    def parse(self, resume_text: str, context=None) -> ResumeData:
         if not resume_text:
             logger.warning("Input resume text is empty.")
-            context.set_code(grpc.StatusCode.NOT_FOUND)
-            context.set_details("File has nothing to process")
+            if context:
+                context.set_code(grpc.StatusCode.NOT_FOUND)
+                context.set_details("File has nothing to process")
             return None
 
-        # 1. Clean the text using the utility
-        cleaned_context = clean_text(resume_text)
-        
-        logger.info("Extracting information from resume...")
+        cleaned_context = clean_resume_text(resume_text)
+        logger.info("Extracting information from resume using Ollama...")
 
-        # 2. Define questions for the model
-        questions = {
-            "job_titles": "What are the job titles?",
-            "skills": "What are the skills?",
-            "experience": "Summarize the work experience."
+        prompt = f"""
+        You are a resume parser AI. 
+        Extract the following information from the resume below and return valid JSON only (no extra text):
+
+        Resume:
+        {resume_text}
+
+        Return the result strictly in JSON format with these keys:
+        {{
+            "job_titles": [list of job titles that you can extract from this resume ( NOT object or array and keep the array empty if no job title is found)],
+            "skills": [list of skills that you can extract from this resume every where in the resume ( NOT object or array and keep the array empty if no skill is found)],
+            "experience": "Total experience in years carefully extract the work experience section and add one the duration of each of them ( should be 32 bit integer only add 0 if experience is in months take round of the number)"
+        }}
+        """
+        llm_output = self._query_ollama(prompt)
+
+        raw = llm_output.strip()
+        match = re.search(r"\{[\s\S]*\}", raw)
+        if not match:
+            logger.error(f"Ollama output not valid JSON:\n{llm_output}")
+            if context:
+                context.set_code(grpc.StatusCode.INTERNAL)
+                context.set_details("No JSON object found in LLM output.")
+                return None
+        json_str = match.group(0)
+        try:
+            parsed_json = json.loads(json_str)
+            job_titles = parsed_json.get("job_titles", [])
+            skills = parsed_json.get("skills", [])
+            experience = parsed_json.get("experience", "")
+        except json.JSONDecodeError:
+            logger.error(f"Ollama output not valid JSON:\n{llm_output}")
+            if context:
+                context.set_code(grpc.StatusCode.INTERNAL)
+                context.set_details("LLM output not valid JSON.")
+            return None
+
+        extracted_data = {
+            "job_titles": job_titles,
+            "skills": skills,
+            "experience": experience
         }
+        return ResumeData(
+            job_titles=extracted_data["job_titles"],
+            skills=extracted_data["skills"],
+            experience=extracted_data["experience"],
+        )
 
-        # 3. Query the model for each piece of information
-        extracted_data = {}
-        for key, question in questions.items():
-            answer = self._query_model(question, cleaned_context)
-            
-            # Simple post-processing for list-based fields
-            if key in ["job_titles", "skills"] and answer:
-                # Split by common delimiters and clean up
-                items = re.split(r',|\n|;', answer)
-                extracted_data[key] = [item.strip() for item in items if item.strip()]
-            else:
-                extracted_data[key] = answer
-
-        logger.info(f"Successfully extracted: {extracted_data}")
-
-        # 4. Return structured data
-        return ResumeData(**extracted_data)
 
 # --- Example Usage ---
 if __name__ == '__main__':
-    # This block allows for direct testing of the parser
-    
-    # Ensure the utility is available in the path
-    import sys
-    sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-    from utils.text_cleaner import clean_text
-    import re
-
-    # Example resume text (replace with a real one for better testing)
     sample_resume = """
     John Doe
     Software Engineer
 
     Experience:
     - Senior Developer at Tech Corp (2020-Present)
-      - Led a team to build a new microservice using Python, Django, and Kubernetes.
+      - Led a team to build microservices using Python, Django, and Kubernetes.
     - Software Engineer at Innovate LLC (2018-2020)
-      - Developed features for a web application with React and Node.js.
+      - Built web applications with React and Node.js.
 
     Skills:
-    Python, Java, C++, JavaScript, React, Node.js, Docker, Kubernetes, SQL, Git.
+    Python, Java, JavaScript, React, Node.js, Docker, Kubernetes, SQL, Git.
     """
 
-    print("Initializing ResumeParser...")
-    parser = ResumeParser()
-    
+    print("Initializing ResumeParser (Ollama)...")
+    parser = ResumeParser(model_name="llama3.1:latest")
+
     print("\n--- Parsing Sample Resume ---")
     parsed_data = parser.parse(sample_resume)
 
     print("\n--- Extracted Data ---")
-    print(f"Job Titles: {parsed_data.job_titles}")
-    print(f"Skills: {parsed_data.skills}")
-    print(f"Experience Summary: {parsed_data.experience}")
-    print("\n----------------------")
-
+    if parsed_data:
+        print(f"Job Titles: {parsed_data.job_titles}")
+        print(f"Skills: {parsed_data.skills}")
+        print(f"Experience Summary: {parsed_data.experience}")

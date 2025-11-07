@@ -21,8 +21,8 @@ class ParseResumeResponse(_message.Message):
     EXPERIENCE_FIELD_NUMBER: _ClassVar[int]
     job_titles: _containers.RepeatedScalarFieldContainer[str]
     skills: _containers.RepeatedScalarFieldContainer[str]
-    experience: str
-    def __init__(self, job_titles: _Optional[_Iterable[str]] = ..., skills: _Optional[_Iterable[str]] = ..., experience: _Optional[str] = ...) -> None: ...
+    experience: int
+    def __init__(self, job_titles: _Optional[_Iterable[str]] = ..., skills: _Optional[_Iterable[str]] = ..., experience: _Optional[int] = ...) -> None: ...
 
 class CalculateRelevancyRequest(_message.Message):
     __slots__ = ("resume_skills", "resume_experience", "job_description")

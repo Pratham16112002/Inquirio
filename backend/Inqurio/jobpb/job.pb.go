@@ -77,7 +77,7 @@ type ParseResumeResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	JobTitles     []string               `protobuf:"bytes,1,rep,name=job_titles,json=jobTitles,proto3" json:"job_titles,omitempty"`
 	Skills        []string               `protobuf:"bytes,2,rep,name=skills,proto3" json:"skills,omitempty"`
-	Experience    string                 `protobuf:"bytes,3,opt,name=experience,proto3" json:"experience,omitempty"`
+	Experience    int32                  `protobuf:"varint,3,opt,name=experience,proto3" json:"experience,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -126,11 +126,11 @@ func (x *ParseResumeResponse) GetSkills() []string {
 	return nil
 }
 
-func (x *ParseResumeResponse) GetExperience() string {
+func (x *ParseResumeResponse) GetExperience() int32 {
 	if x != nil {
 		return x.Experience
 	}
-	return ""
+	return 0
 }
 
 type CalculateRelevancyRequest struct {
@@ -250,7 +250,7 @@ const file_protos_job_proto_rawDesc = "" +
 	"job_titles\x18\x01 \x03(\tR\tjobTitles\x12\x16\n" +
 	"\x06skills\x18\x02 \x03(\tR\x06skills\x12\x1e\n" +
 	"\n" +
-	"experience\x18\x03 \x01(\tR\n" +
+	"experience\x18\x03 \x01(\x05R\n" +
 	"experience\"\x96\x01\n" +
 	"\x19CalculateRelevancyRequest\x12#\n" +
 	"\rresume_skills\x18\x01 \x03(\tR\fresumeSkills\x12+\n" +
