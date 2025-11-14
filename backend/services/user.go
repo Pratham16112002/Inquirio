@@ -47,13 +47,16 @@ func (u UserServices) RegisterUser(ctx context.Context, user *models.User, token
 func (u UserServices) GetUserByEmail(ctx context.Context, email string) (*models.User, error) {
 	user, err := u.repo.Users.GetByEmail(ctx, email)
 	if err != nil {
+		u.logger.Warnw("User does not exist with this credentials", "error : ", err.Error())
 		return nil, err
 	}
 	return user, nil
 }
 
 func (u UserServices) AuthenticatePassword(ctx context.Context, user *models.User, pass *models.PasswordType) error {
+	user.Password.Set(*user.Password.Text)
 	if err := user.Password.Compare(*pass.Text); err != nil {
+		u.logger.Warnw("Incorrect credentials", "error : ", err.Error())
 		return err
 	}
 	return nil

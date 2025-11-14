@@ -29,7 +29,7 @@ var (
 func (u *UserRepository) FindByEmail(ctx context.Context, email string) (*models.User, error) {
 	row := u.DB.QueryRowContext(ctx, "SELECT id, username, first_name, last_name, provider, provider_id, password, email FROM users WHERE email = $1", email)
 	user := &models.User{}
-	err := row.Scan(&user.ID, &user.Username, &user.FirstName, &user.LastName, &user.Provider, &user.ProviderID, &user.Password, &user.Email)
+	err := row.Scan(&user.ID, &user.Username, &user.FirstName, &user.LastName, &user.Provider, &user.ProviderID, &user.Password.Text, &user.Email)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, ErrUserNotFound
@@ -137,7 +137,7 @@ func (u *UserRepository) Activate(ctx context.Context, token string) error {
 		if err != nil {
 			return err
 		}
-		user.IsActive = true
+		user.IsVerified = true
 		err = u.update(tx, ctx, user)
 		if err != nil {
 			return err
@@ -154,9 +154,9 @@ func (u *UserRepository) update(tx *sql.Tx, ctx context.Context, user *models.Us
 	ctx, cancel := context.WithTimeout(ctx, QueryTimeOut)
 	defer cancel()
 
-	query := `UPDATE users SET username = $1 , email = $2 , is_active = $3 WHERE id = $4`
+	query := `UPDATE users SET username = $1 , email = $2 , is_verified = $3 WHERE id = $4`
 
-	_, err := tx.ExecContext(ctx, query, user.Username, user.Email, user.IsActive, user.ID)
+	_, err := tx.ExecContext(ctx, query, user.Username, user.Email, user.IsVerified, user.ID)
 	if err != nil {
 		return err
 	}

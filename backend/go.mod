@@ -14,6 +14,8 @@ require (
 )
 
 require (
+	github.com/go-chi/cors v1.2.2 // indirect
+	github.com/go-faker/faker/v4 v4.7.0 // indirect
 	github.com/golang-jwt/jwt/v5 v5.3.0 // indirect
 	github.com/gorilla/mux v1.8.1 // indirect
 	github.com/resend/resend-go/v2 v2.27.0 // indirect

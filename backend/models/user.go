@@ -17,7 +17,7 @@ type User struct {
 	Password   *PasswordType `json:"-"`
 	Email      string        `json:"email"`
 	IsActive   bool          `json:"is_active"`
-	IsVerified bool          `json:"is_verfied"`
+	IsVerified bool          `json:"is_verified"`
 	CreatedAt  time.Time     `json:"created_at"`
 	UpdatedAt  time.Time     `json:"updated_at"`
 }

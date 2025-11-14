@@ -16,6 +16,7 @@ import (
 
 	"github.com/alexedwards/scs/v2"
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/cors"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -59,7 +60,7 @@ func main() {
 	}
 	defer logger.Sync()
 
-	db, err := db.NewDB(cfg.Logger,
+	db_conn, err := db.NewDB(cfg.Logger,
 		cfg.Config.DBConfig.Host,
 		cfg.Config.DBConfig.User,
 		cfg.Config.DBConfig.Password,
@@ -68,10 +69,20 @@ func main() {
 	if err != nil {
 		logger.Fatalf("failed to connect to db: %v", err.Error())
 	}
-	defer db.Close()
+	defer db_conn.Close()
 	r := chi.NewRouter()
+
+	r.Use(cors.Handler(cors.Options{
+		AllowedOrigins:   []string{"http://localhost:3000"},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
+		ExposedHeaders:   []string{"Link"},
+		AllowCredentials: true,
+		MaxAge:           300, // Maximum value not ignored by any major browsers
+	}))
+
 	apiRouter := chi.NewRouter()
-	cfg.Store = repositories.NewStorage(db)
+	cfg.Store = repositories.NewStorage(db_conn)
 
 	// Handling users
 	logger.Infof("registering user routes")

@@ -44,22 +44,28 @@ func (u User) Login(w http.ResponseWriter, r *http.Request) {
 	user, err := u.srv.UserServices.GetUserByEmail(ctx, payload.Email)
 	if err != nil {
 		if errors.Is(err, repositories.ErrUserNotFound) {
-			u.cfg.Logger.Warnw("User does not exist with this credentials", "error : ", err.Error())
 			response.Error(w, r, "Login Failed", "User does not exist", 404, http.StatusNotFound)
 			return
 		}
 		response.Error(w, r, "Something is wrong on our side", err.Error(), 500, http.StatusInternalServerError)
-	}
-	if user.IsActive == false || user.IsVerified == false {
-		u.cfg.Logger.Warnw("User not verified", "error : ", err.Error())
-		response.Error(w, r, "Login Failed", "Invalid credentials", 404, http.StatusNotFound)
 		return
 	}
+	if user.IsActive == false {
+		u.cfg.Logger.Warnw("User not active", "error : ", "user has been deactivated")
+		response.Error(w, r, "Login Failed", "User does not exist", 404, http.StatusNotFound)
+		return
+	}
+
+	if user.IsVerified == false {
+		u.cfg.Logger.Warnw("User not verified", "error : ", "user's email has not been verified")
+		response.Error(w, r, "Login Failed", "Please verify your email", 404, http.StatusNotFound)
+		return
+	}
+
 	pass := &models.PasswordType{}
 	pass.Set(payload.Password)
 	err = u.srv.UserServices.AuthenticatePassword(ctx, user, pass)
 	if err != nil {
-		u.cfg.Logger.Warnw("Incorrect credentials", "error : ", err.Error())
 		response.Error(w, r, "Login Failed", "Incorrect credentials", 404, http.StatusNotFound)
 		return
 	}
@@ -119,7 +125,7 @@ func (u User) SignUp(w http.ResponseWriter, r *http.Request) {
 	hashedToken := hex.EncodeToString(hash[:])
 	err = u.srv.UserServices.RegisterUser(ctx, user, hashedToken)
 	if err != nil {
-		response.Error(w, r, "SignUp failed", err.Error(), 500, http.StatusInternalServerError)
+		response.Error(w, r, "Signup failed", err.Error(), 500, http.StatusInternalServerError)
 		return
 	}
 	activationURL := fmt.Sprintf("%s/activate/%s", "http://localhost:3000/user", token)
@@ -128,7 +134,7 @@ func (u User) SignUp(w http.ResponseWriter, r *http.Request) {
 		response.Error(w, r, "Verfication email was not sent", err.Error(), 500, http.StatusInternalServerError)
 		return
 	}
-	response.Success(w, r, "SignUp Successful", nil, http.StatusCreated)
+	response.Success(w, r, "Signup Successful", nil, http.StatusCreated)
 }
 
 func (u User) Activate(w http.ResponseWriter, r *http.Request) {
@@ -136,7 +142,8 @@ func (u User) Activate(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	err := u.srv.UserServices.ActivateUser(ctx, token)
 	if err != nil {
-		response.Error(w, r, "Activation failed", err.Error(), 500, http.StatusInternalServerError)
+		u.cfg.Logger.Infow("Activation not completed", "error : ", err.Error())
+		response.Error(w, r, "Activation failed", "Could not activate account", 500, http.StatusInternalServerError)
 		return
 	}
 	response.Success(w, r, "Activation Successful", nil, http.StatusOK)
