@@ -69,7 +69,7 @@ func (u User) Login(w http.ResponseWriter, r *http.Request) {
 		response.Error(w, r, "Login Failed", "Incorrect credentials", 404, http.StatusNotFound)
 		return
 	}
-	u.cfg.Session.Put(ctx, "userId", user.ID)
+	u.cfg.Session.Put(ctx, "userId", user.ID.String())
 	u.cfg.Session.Put(ctx, "userName", user.Username)
 	u.cfg.Session.Put(ctx, "userEmail", user.Email)
 	response.Success(w, r, "Login Successfull", nil, http.StatusOK)
@@ -108,7 +108,7 @@ func (u User) SignUp(w http.ResponseWriter, r *http.Request) {
 		response.Error(w, r, "Invalid email", err.Error(), 409, http.StatusConflict)
 		return
 	}
-	pass := &models.PasswordType{}
+	pass := models.PasswordType{}
 	pass.Set(payload.Password)
 	user := &models.User{
 		ID:         uuid.New(),

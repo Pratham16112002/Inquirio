@@ -1,0 +1,6 @@
+ALTER TABLE IF EXISTS users 
+ADD COLUMN role_id INT REFERENCES roles(id) DEFAULT 1;
+
+
+
+

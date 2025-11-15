@@ -80,6 +80,12 @@ func main() {
 		AllowCredentials: true,
 		MaxAge:           300, // Maximum value not ignored by any major browsers
 	}))
+	// Registering session manager
+	sessionManager := scs.New()
+	sessionManager.Lifetime = 24 * time.Hour
+	r.Use(sessionManager.LoadAndSave)
+	cfg.Session = sessionManager
+	cfg.Auth = auth.NewAuth(cfg.Store, sessionManager)
 
 	apiRouter := chi.NewRouter()
 	cfg.Store = repositories.NewStorage(db_conn)
@@ -101,12 +107,7 @@ func main() {
 	resumeRoutes := routes.NewResumeRoutes(resumeController)
 	resumeRoutes.RegisterResumeRoutes(apiRouter)
 
-	sessionManager := scs.New()
-	sessionManager.Lifetime = 24 * time.Hour
-	r.Use(sessionManager.LoadAndSave)
-	cfg.Session = sessionManager
 	r.Mount("/api", apiRouter)
-	cfg.Auth = auth.NewAuth(cfg.Store, sessionManager)
 
 	Run(cfg, r)
 

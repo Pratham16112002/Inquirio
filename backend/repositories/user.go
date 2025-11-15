@@ -27,9 +27,9 @@ var (
 )
 
 func (u *UserRepository) FindByEmail(ctx context.Context, email string) (*models.User, error) {
-	row := u.DB.QueryRowContext(ctx, "SELECT id, username, first_name, last_name, provider, provider_id, password, email FROM users WHERE email = $1", email)
 	user := &models.User{}
-	err := row.Scan(&user.ID, &user.Username, &user.FirstName, &user.LastName, &user.Provider, &user.ProviderID, &user.Password.Text, &user.Email)
+	query := `SELECT id, username, first_name, last_name, provider, provider_id, password, email,is_active, is_verified FROM users WHERE email = $1`
+	err := u.DB.QueryRowContext(ctx, query, email).Scan(&user.ID, &user.Username, &user.FirstName, &user.LastName, &user.Provider, &user.ProviderID, &user.Password.Hash, &user.Email, &user.IsActive, &user.IsVerified)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, ErrUserNotFound
@@ -187,4 +187,17 @@ func (u *UserRepository) deleteInvitation(tx *sql.Tx, ctx context.Context, userI
 		return err
 	}
 	return nil
+}
+
+func (u *UserRepository) GetByID(ctx context.Context, id uuid.UUID) (*models.User, error) {
+	row := u.DB.QueryRowContext(ctx, "SELECT id, username, first_name, last_name, is_active , is_verified, email, role_id FROM users WHERE id = $1", id)
+	user := &models.User{}
+	err := row.Scan(&user.ID, &user.Username, &user.FirstName, &user.LastName, &user.IsActive, &user.IsVerified, &user.Password, &user.Email, &user.RoleID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, ErrUserNotFound
+		}
+		return nil, err
+	}
+	return user, nil
 }

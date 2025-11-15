@@ -20,12 +20,17 @@ type Storage struct {
 		update(tx *sql.Tx, ctx context.Context, user *models.User) error
 		deleteInvitation(tx *sql.Tx, ctx context.Context, userId uuid.UUID) error
 		GetByEmail(ctx context.Context, email string) (*models.User, error)
+		GetByID(ctx context.Context, id uuid.UUID) (*models.User, error)
+	}
+	Role interface {
+		GetRoleByID(ctx context.Context, id int) (models.Role, error)
 	}
 }
 
 func NewStorage(db *sql.DB) Storage {
 	return Storage{
 		Users: &UserRepository{DB: db},
+		Role:  &RoleRepository{DB: db},
 	}
 }
 
