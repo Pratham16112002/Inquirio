@@ -28,7 +28,7 @@ var (
 
 func (u *UserRepository) FindByEmail(ctx context.Context, email string) (*models.User, error) {
 	user := &models.User{}
-	query := `SELECT id, username, first_name, last_name, provider, provider_id, password, email,is_active, is_verified FROM users WHERE email = $1`
+	query := `SELECT id, username, first_name, last_name, provider, provider_id, password, email,is_active, is_verified FROM user WHERE email = $1`
 	err := u.DB.QueryRowContext(ctx, query, email).Scan(&user.ID, &user.Username, &user.FirstName, &user.LastName, &user.Provider, &user.ProviderID, &user.Password.Hash, &user.Email, &user.IsActive, &user.IsVerified)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -41,7 +41,7 @@ func (u *UserRepository) FindByEmail(ctx context.Context, email string) (*models
 }
 
 func (u *UserRepository) FindByUsername(ctx context.Context, userName string) (*models.User, error) {
-	row := u.DB.QueryRowContext(ctx, "SELECT * FROM users WHERE username = $1", userName)
+	row := u.DB.QueryRowContext(ctx, "SELECT * FROM user WHERE username = $1", userName)
 	user := &models.User{}
 	err := row.Scan(&user.ID, &user.Username, &user.FirstName, &user.LastName, &user.Provider, &user.ProviderID, &user.Password, &user.Email)
 	if err != nil {
@@ -57,7 +57,7 @@ func (u *UserRepository) create(tx *sql.Tx, ctx context.Context, user *models.Us
 	ctx, cancel := context.WithTimeout(ctx, QueryTimeOut)
 	defer cancel()
 
-	row := tx.QueryRowContext(ctx, "INSERT INTO users (id,username,first_name,last_name,provider,provider_id,password,email) VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING id,created_at , updated_at", user.ID, user.Username, user.FirstName, user.LastName, user.Provider, user.ProviderID, user.Password.Hash, user.Email)
+	row := tx.QueryRowContext(ctx, "INSERT INTO user (id,username,first_name,last_name,provider,provider_id,password,email) VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING id,created_at , updated_at", user.ID, user.Username, user.FirstName, user.LastName, user.Provider, user.ProviderID, user.Password.Hash, user.Email)
 	err := row.Scan(&user.ID, &user.CreatedAt, &user.UpdatedAt)
 
 	if err != nil {
@@ -90,7 +90,7 @@ func (u *UserRepository) createInvitation(tx *sql.Tx, ctx context.Context, userI
 	ctx, cancel := context.WithTimeout(ctx, QueryTimeOut)
 	defer cancel()
 
-	row := tx.QueryRowContext(ctx, "INSERT INTO user_invitations (id,user_id, token,expiry) VALUES ($1, $2,$3,$4) RETURNING id,created_at", uuid.New(), userId, token, time.Now().Add(InvitationExpiryTime))
+	row := tx.QueryRowContext(ctx, "INSERT INTO user_invitation (id,user_id, token,expiry) VALUES ($1, $2,$3,$4) RETURNING id,created_at", uuid.New(), userId, token, time.Now().Add(InvitationExpiryTime))
 	if row.Err() != nil {
 		return row.Err()
 	}
@@ -114,7 +114,7 @@ func (u *UserRepository) CreateAndInvite(ctx context.Context, token string, user
 func (u *UserRepository) getUserFromToken(tx *sql.Tx, ctx context.Context, token string) (*models.User, error) {
 	ctx, cancel := context.WithTimeout(ctx, QueryTimeOut)
 	defer cancel()
-	query := `SELECT u.id , u.username , u.email , u.created_at , u.is_active FROM users u JOIN user_invitations
+	query := `SELECT u.id , u.username , u.email , u.created_at , u.is_active FROM user u JOIN user_invitation
 	ui ON u.id = ui.user_id WHERE ui.token = $1 AND ui.expiry > $2`
 	user := &models.User{}
 	hash := sha256.Sum256([]byte(token))
@@ -154,7 +154,7 @@ func (u *UserRepository) update(tx *sql.Tx, ctx context.Context, user *models.Us
 	ctx, cancel := context.WithTimeout(ctx, QueryTimeOut)
 	defer cancel()
 
-	query := `UPDATE users SET username = $1 , email = $2 , is_verified = $3 WHERE id = $4`
+	query := `UPDATE user SET username = $1 , email = $2 , is_verified = $3 WHERE id = $4`
 
 	_, err := tx.ExecContext(ctx, query, user.Username, user.Email, user.IsVerified, user.ID)
 	if err != nil {
@@ -164,7 +164,7 @@ func (u *UserRepository) update(tx *sql.Tx, ctx context.Context, user *models.Us
 }
 
 func (u *UserRepository) GetByEmail(ctx context.Context, email string) (*models.User, error) {
-	row := u.DB.QueryRowContext(ctx, "SELECT id, username, first_name, last_name, is_active , is_verified, password, email FROM users WHERE email = $1", email)
+	row := u.DB.QueryRowContext(ctx, "SELECT id, username, first_name, last_name, is_active , is_verified, password, email FROM user WHERE email = $1", email)
 	user := &models.User{}
 	err := row.Scan(&user.ID, &user.Username, &user.FirstName, &user.LastName, &user.IsActive, &user.IsVerified, &user.Password, &user.Email)
 	if err != nil {
@@ -180,7 +180,7 @@ func (u *UserRepository) deleteInvitation(tx *sql.Tx, ctx context.Context, userI
 	ctx, cancel := context.WithTimeout(ctx, QueryTimeOut)
 	defer cancel()
 
-	query := `DELETE FROM user_invitations WHERE user_id = $1`
+	query := `DELETE FROM user_invitation WHERE user_id = $1`
 
 	_, err := tx.ExecContext(ctx, query, userId)
 	if err != nil {
@@ -190,7 +190,7 @@ func (u *UserRepository) deleteInvitation(tx *sql.Tx, ctx context.Context, userI
 }
 
 func (u *UserRepository) GetByID(ctx context.Context, id uuid.UUID) (*models.User, error) {
-	row := u.DB.QueryRowContext(ctx, "SELECT id, username, first_name, last_name, is_active , is_verified, email, role_id FROM users WHERE id = $1", id)
+	row := u.DB.QueryRowContext(ctx, "SELECT id, username, first_name, last_name, is_active , is_verified, email, role_id FROM user WHERE id = $1", id)
 	user := &models.User{}
 	err := row.Scan(&user.ID, &user.Username, &user.FirstName, &user.LastName, &user.IsActive, &user.IsVerified, &user.Password, &user.Email, &user.RoleID)
 	if err != nil {

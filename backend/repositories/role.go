@@ -11,7 +11,7 @@ type RoleRepository struct {
 }
 
 func (r *RoleRepository) GetRoleByID(ctx context.Context, id int) (models.Role, error) {
-	row := r.DB.QueryRowContext(ctx, "SELECT id, name, level, description FROM roles WHERE id = $1", id)
+	row := r.DB.QueryRowContext(ctx, "SELECT id, name, level, description FROM role WHERE id = $1", id)
 	role := models.Role{}
 	err := row.Scan(&role.ID, &role.Name, &role.Level, &role.Description)
 	if err != nil {

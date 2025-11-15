@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS roles (
+CREATE TABLE IF NOT EXISTS role (
     id BIGINT PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     level INT NOT NULL,
@@ -6,19 +6,19 @@ CREATE TABLE IF NOT EXISTS roles (
 );
 
 
-INSERT INTO roles(name , level , description) VALUES (
+INSERT INTO role (name , level , description) VALUES (
     'user',
     1,
     'Basic user'
 );
 
-INSERT INTO roles(name , level , description) VALUES (
+INSERT INTO role (name , level , description) VALUES (
     'admin',
     3,
     'Admin user'
 );
 
-INSERT INTO roles(name , level , description) VALUES (
+INSERT INTO role (name , level , description) VALUES (
     'mentor',
     2,
     'Mentor user'

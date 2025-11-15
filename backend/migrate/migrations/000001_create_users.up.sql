@@ -1,6 +1,6 @@
 CREATE EXTENSION IF NOT exists citext;
 
-CREATE TABLE users (
+CREATE TABLE user (
     id UUID PRIMARY KEY,
     email CITEXT UNIQUE NOT NULL,
     username CITEXT UNIQUE NOT NULL,
