@@ -4,3 +4,4 @@ __debug_bin*
 .envrc
 postgres_data/
 job-service/myenv
+backend/tmp
