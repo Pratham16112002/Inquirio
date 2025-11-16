@@ -22,6 +22,19 @@ type Storage struct {
 		GetByEmail(ctx context.Context, email string) (*models.User, error)
 		GetByID(ctx context.Context, id uuid.UUID) (*models.User, error)
 	}
+	Mentor interface {
+		FindByEmail(ctx context.Context, email string) (*models.Mentor, error)
+		FindByUsername(ctx context.Context, username string) (*models.Mentor, error)
+		CreateAndInvite(ctx context.Context, token string, user *models.Mentor) error
+		create(tx *sql.Tx, ctx context.Context, user *models.Mentor) error
+		createInvitation(tx *sql.Tx, ctx context.Context, userId uuid.UUID, token string) error
+		Activate(ctx context.Context, token string) error
+		getUserFromToken(tx *sql.Tx, ctx context.Context, token string) (*models.Mentor, error)
+		update(tx *sql.Tx, ctx context.Context, user *models.Mentor) error
+		deleteInvitation(tx *sql.Tx, ctx context.Context, userId uuid.UUID) error
+		GetByEmail(ctx context.Context, email string) (*models.Mentor, error)
+		GetByID(ctx context.Context, id uuid.UUID) (*models.Mentor, error)
+	}
 	Role interface {
 		GetRoleByID(ctx context.Context, id int) (models.Role, error)
 	}

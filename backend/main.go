@@ -101,6 +101,11 @@ func main() {
 	userRoutes := routes.NewUserRoutes(userController)
 	userRoutes.RegisterUserRoutes(apiRouter)
 
+	logger.Infof("registering mentor routes")
+	mentorController := controller.NewController(srv, cfg)
+	mentorRoutes := routes.NewMentorRoutes(mentorController)
+	mentorRoutes.RegisterMentorRoutes(apiRouter)
+
 	// Handling resumes
 	logger.Infof("regiter resume routes")
 	resumeController := controller.NewController(srv, cfg)

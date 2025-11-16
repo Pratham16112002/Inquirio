@@ -4,6 +4,7 @@ CREATE TABLE user (
     id UUID PRIMARY KEY,
     email CITEXT UNIQUE NOT NULL,
     username CITEXT UNIQUE NOT NULL,
+    prefix VARCHAR(255),
     first_name VARCHAR(255),
     last_name VARCHAR(255),
     provider VARCHAR(50),

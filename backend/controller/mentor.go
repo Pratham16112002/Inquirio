@@ -17,7 +17,7 @@ import (
 	"github.com/google/uuid"
 )
 
-type User struct {
+type Mentor struct {
 	srv services.Service
 	cfg config.Application
 }
@@ -75,14 +75,16 @@ func (u User) Login(w http.ResponseWriter, r *http.Request) {
 	response.Success(w, r, "Login Successfull", nil, http.StatusOK)
 }
 
-type SingUpPayload struct {
-	Username   string `json:"username" validate:"required,max=50"`
-	FirstName  string `json:"first_name" validate:"required,max=100"`
-	LastName   string `json:"last_name" validate:"max=100"`
-	Provider   string `json:"provider"`
-	ProviderID string `json:"provider_id"`
-	Email      string `json:"email" validate:"required,email,max=50"`
-	Password   string `json:"password" validate:"required,min=3,max=88"`
+type SignUpPayload struct {
+	Username        string  `json:"username" validate:"required,max=50"`
+	FirstName       string  `json:"first_name" validate:"required,max=100"`
+	LastName        string  `json:"last_name" validate:"max=100"`
+	Provider        string  `json:"provider"`
+	ProviderID      string  `json:"provider_id"`
+	ExperienceYears float32 `json:"experience_years"`
+	Bio             string  `json:"bio"`
+	Email           string  `json:"email" validate:"required,email,max=50"`
+	Password        string  `json:"password" validate:"required,min=3,max=88"`
 }
 
 func (u User) SignUp(w http.ResponseWriter, r *http.Request) {
@@ -108,7 +110,7 @@ func (u User) SignUp(w http.ResponseWriter, r *http.Request) {
 	}
 	pass := models.PasswordType{}
 	pass.Set(payload.Password)
-	user := &models.User{
+	user := &models.Mentor{
 		ID:         uuid.New(),
 		Username:   payload.Username,
 		FirstName:  payload.FirstName,
@@ -126,7 +128,7 @@ func (u User) SignUp(w http.ResponseWriter, r *http.Request) {
 		response.Error(w, r, "Signup failed", err.Error(), 500, http.StatusInternalServerError)
 		return
 	}
-	activationURL := fmt.Sprintf("%s/activate/%s", "http://localhost:3000/user", token)
+	activationURL := fmt.Sprintf("%s/activate/%s", "http://localhost:3000/teacher", token)
 	err = u.cfg.Mail.Send("user_invitation.tmpl", payload.Username, []string{payload.Email}, map[string]string{"ActivationURL": activationURL})
 	if err != nil {
 		response.Error(w, r, "Verfication email was not sent", err.Error(), 500, http.StatusInternalServerError)

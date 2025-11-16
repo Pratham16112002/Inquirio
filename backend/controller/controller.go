@@ -15,6 +15,10 @@ type Controller struct {
 	Resume interface {
 		ProcessResume(w http.ResponseWriter, r *http.Request)
 	}
+	Mentor interface {
+		SignUp(w http.ResponseWriter, r *http.Request)
+		Login(w http.ResponseWriter, r *http.Request)
+	}
 }
 
 func NewController(service services.Service, cfg config.Application) Controller {
