@@ -22,13 +22,13 @@ type User struct {
 	cfg config.Application
 }
 
-type LoginPayload struct {
+type loginPayload struct {
 	Email    string `json:"email" validate:"required,email,max=50"`
 	Password string `json:"password" validate:"required,min=3,max=88"`
 }
 
-func (u User) Login(w http.ResponseWriter, r *http.Request) {
-	var payload LoginPayload
+func (u User) UserLogin(w http.ResponseWriter, r *http.Request) {
+	var payload loginPayload
 	err := json.Read(w, r, &payload)
 	if err != nil {
 		u.cfg.Logger.Warnw("Bad request", "error : ", err.Error())
@@ -75,7 +75,7 @@ func (u User) Login(w http.ResponseWriter, r *http.Request) {
 	response.Success(w, r, "Login Successfull", nil, http.StatusOK)
 }
 
-type SingUpPayload struct {
+type singUpPayload struct {
 	Username   string `json:"username" validate:"required,max=50"`
 	FirstName  string `json:"first_name" validate:"required,max=100"`
 	LastName   string `json:"last_name" validate:"max=100"`
@@ -85,8 +85,8 @@ type SingUpPayload struct {
 	Password   string `json:"password" validate:"required,min=3,max=88"`
 }
 
-func (u User) SignUp(w http.ResponseWriter, r *http.Request) {
-	var payload SingUpPayload
+func (u User) UserSignUp(w http.ResponseWriter, r *http.Request) {
+	var payload singUpPayload
 
 	err := json.Read(w, r, &payload)
 	if err != nil {
@@ -98,18 +98,17 @@ func (u User) SignUp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	ctx := r.Context()
-	if found, err := u.srv.UserServices.CheckUsernameExists(ctx, payload.Username); found == true {
-		response.Error(w, r, "Invalid username", err.Error(), 409, http.StatusConflict)
+	if found := u.srv.UserServices.CheckUsernameExists(ctx, payload.Username); found == true {
+		response.Error(w, r, "Signup failed", "Username already taken", 409, http.StatusConflict)
 		return
 	}
-	if found, err := u.srv.UserServices.CheckEmailExists(ctx, payload.Email); found == true {
-		response.Error(w, r, "Invalid email", err.Error(), 409, http.StatusConflict)
+	if found := u.srv.UserServices.CheckEmailExists(ctx, payload.Email); found == true {
+		response.Error(w, r, "Signup failed", "Email already taken", 409, http.StatusConflict)
 		return
 	}
 	pass := models.PasswordType{}
 	pass.Set(payload.Password)
 	user := &models.User{
-		ID:         uuid.New(),
 		Username:   payload.Username,
 		FirstName:  payload.FirstName,
 		LastName:   payload.LastName,
@@ -123,19 +122,19 @@ func (u User) SignUp(w http.ResponseWriter, r *http.Request) {
 	hashedToken := hex.EncodeToString(hash[:])
 	err = u.srv.UserServices.RegisterUser(ctx, user, hashedToken)
 	if err != nil {
-		response.Error(w, r, "Signup failed", err.Error(), 500, http.StatusInternalServerError)
+		response.Error(w, r, "Signup failed", "Could not register user", 500, http.StatusInternalServerError)
 		return
 	}
 	activationURL := fmt.Sprintf("%s/activate/%s", "http://localhost:3000/user", token)
 	err = u.cfg.Mail.Send("user_invitation.tmpl", payload.Username, []string{payload.Email}, map[string]string{"ActivationURL": activationURL})
 	if err != nil {
-		response.Error(w, r, "Verfication email was not sent", err.Error(), 500, http.StatusInternalServerError)
+		response.Error(w, r, "Signup failed", "Verification email not sent", 500, http.StatusInternalServerError)
 		return
 	}
 	response.Success(w, r, "Signup Successful", nil, http.StatusCreated)
 }
 
-func (u User) Activate(w http.ResponseWriter, r *http.Request) {
+func (u User) UserActivation(w http.ResponseWriter, r *http.Request) {
 	token := chi.URLParam(r, "token")
 	ctx := r.Context()
 	err := u.srv.UserServices.ActivateUser(ctx, token)

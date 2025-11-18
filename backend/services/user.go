@@ -14,26 +14,22 @@ type UserServices struct {
 	logger *zap.SugaredLogger
 }
 
-var (
-	ErrUserNameNotAvailable = errors.New("username not available")
-)
-
-func (u UserServices) CheckUsernameExists(ctx context.Context, username string) (bool, error) {
+func (u UserServices) CheckUsernameExists(ctx context.Context, username string) bool {
 	if _, err := u.repo.Users.FindByUsername(ctx, username); err != nil {
 		if errors.Is(err, repositories.ErrUserNotFound) {
-			return false, nil
+			return false
 		}
 	}
-	return true, ErrUserNameNotAvailable
+	return true
 }
 
-func (u UserServices) CheckEmailExists(ctx context.Context, email string) (bool, error) {
+func (u UserServices) CheckEmailExists(ctx context.Context, email string) bool {
 	if _, err := u.repo.Users.FindByEmail(ctx, email); err != nil {
 		if errors.Is(err, repositories.ErrUserNotFound) {
-			return false, nil
+			return false
 		}
 	}
-	return true, ErrUserNameNotAvailable
+	return true
 }
 
 func (u UserServices) ActivateUser(ctx context.Context, token string) error {

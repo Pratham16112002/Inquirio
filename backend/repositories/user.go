@@ -12,10 +12,12 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"go.uber.org/zap"
 )
 
 type UserRepository struct {
-	DB *sql.DB
+	DB     *sql.DB
+	logger *zap.SugaredLogger
 }
 
 var (
@@ -28,10 +30,11 @@ var (
 
 func (u *UserRepository) FindByEmail(ctx context.Context, email string) (*models.User, error) {
 	user := &models.User{}
-	query := `SELECT id, username, first_name, last_name, provider, provider_id, password, email,is_active, is_verified FROM user WHERE email = $1`
+	query := `SELECT id, username, first_name, last_name, provider, provider_id, password, email,is_active, is_verified FROM users WHERE email = $1`
 	err := u.DB.QueryRowContext(ctx, query, email).Scan(&user.ID, &user.Username, &user.FirstName, &user.LastName, &user.Provider, &user.ProviderID, &user.Password.Hash, &user.Email, &user.IsActive, &user.IsVerified)
 	if err != nil {
 		if err == sql.ErrNoRows {
+			u.logger.Warnw("user does not exist", "error :", err.Error())
 			return nil, ErrUserNotFound
 		}
 		return nil, err
@@ -41,11 +44,12 @@ func (u *UserRepository) FindByEmail(ctx context.Context, email string) (*models
 }
 
 func (u *UserRepository) FindByUsername(ctx context.Context, userName string) (*models.User, error) {
-	row := u.DB.QueryRowContext(ctx, "SELECT * FROM user WHERE username = $1", userName)
+	row := u.DB.QueryRowContext(ctx, "SELECT * FROM users WHERE username = $1", userName)
 	user := &models.User{}
 	err := row.Scan(&user.ID, &user.Username, &user.FirstName, &user.LastName, &user.Provider, &user.ProviderID, &user.Password, &user.Email)
 	if err != nil {
 		if err == sql.ErrNoRows {
+			u.logger.Warnw("user does not exist", "error :", err.Error())
 			return nil, ErrUserNotFound
 		}
 		return nil, err
@@ -57,7 +61,7 @@ func (u *UserRepository) create(tx *sql.Tx, ctx context.Context, user *models.Us
 	ctx, cancel := context.WithTimeout(ctx, QueryTimeOut)
 	defer cancel()
 
-	row := tx.QueryRowContext(ctx, "INSERT INTO user (id,username,first_name,last_name,provider,provider_id,password,email) VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING id,created_at , updated_at", user.ID, user.Username, user.FirstName, user.LastName, user.Provider, user.ProviderID, user.Password.Hash, user.Email)
+	row := tx.QueryRowContext(ctx, "INSERT INTO users (id,username,first_name,last_name,provider,provider_id,password,email) VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING id,created_at , updated_at", user.ID, user.Username, user.FirstName, user.LastName, user.Provider, user.ProviderID, user.Password.Hash, user.Email)
 	err := row.Scan(&user.ID, &user.CreatedAt, &user.UpdatedAt)
 
 	if err != nil {
@@ -67,21 +71,18 @@ func (u *UserRepository) create(tx *sql.Tx, ctx context.Context, user *models.Us
 		switch {
 		// Check for specific PostgreSQL duplicate key constraints
 		case strings.Contains(errString, `"users_email_key"`):
+			u.logger.Warnw("duplicate email", "error :", errString)
 			return ErrDuplicateEmail
 		case strings.Contains(errString, `"users_username_key"`):
+			u.logger.Warnw("duplicate username", "error :", errString)
 			return ErrDuplicateUsername
 		case errors.Is(err, sql.ErrNoRows):
-			// This case is unlikely for a RETURNING clause but is good practice.
+			u.logger.Errorw("Failed to insert the user", errString)
 			return fmt.Errorf("UserRepository.Create failed: INSERT did not return a row: %w", err)
 		default:
-			// For all other errors (e.g., connection issue, SQL syntax), return a wrapped error
+			u.logger.Errorw("Failed to insert the user", errString)
 			return fmt.Errorf("UserRepository.Create failed: %w", err)
 		}
-	}
-
-	// Check if the context was cancelled after the query executed but before processing
-	if ctx.Err() != nil {
-		return ctx.Err()
 	}
 	return nil
 }
@@ -92,6 +93,7 @@ func (u *UserRepository) createInvitation(tx *sql.Tx, ctx context.Context, userI
 
 	row := tx.QueryRowContext(ctx, "INSERT INTO user_invitation (id,user_id, token,expiry) VALUES ($1, $2,$3,$4) RETURNING id,created_at", uuid.New(), userId, token, time.Now().Add(InvitationExpiryTime))
 	if row.Err() != nil {
+		u.logger.Errorw("insertion to user_invitation failed", "error :", row.Err().Error())
 		return row.Err()
 	}
 	return nil
@@ -114,7 +116,7 @@ func (u *UserRepository) CreateAndInvite(ctx context.Context, token string, user
 func (u *UserRepository) getUserFromToken(tx *sql.Tx, ctx context.Context, token string) (*models.User, error) {
 	ctx, cancel := context.WithTimeout(ctx, QueryTimeOut)
 	defer cancel()
-	query := `SELECT u.id , u.username , u.email , u.created_at , u.is_active FROM user u JOIN user_invitation
+	query := `SELECT u.id , u.username , u.email , u.created_at , u.is_active FROM users u JOIN user_invitation
 	ui ON u.id = ui.user_id WHERE ui.token = $1 AND ui.expiry > $2`
 	user := &models.User{}
 	hash := sha256.Sum256([]byte(token))
@@ -123,8 +125,10 @@ func (u *UserRepository) getUserFromToken(tx *sql.Tx, ctx context.Context, token
 	if err != nil {
 		switch err {
 		case sql.ErrNoRows:
+			u.logger.Errorw("user does not exist", "error :", err.Error())
 			return nil, ErrUserNotFound
 		default:
+			u.logger.Errorw("user extraction failed", "error :", err.Error())
 			return nil, err
 		}
 	}
@@ -154,7 +158,7 @@ func (u *UserRepository) update(tx *sql.Tx, ctx context.Context, user *models.Us
 	ctx, cancel := context.WithTimeout(ctx, QueryTimeOut)
 	defer cancel()
 
-	query := `UPDATE user SET username = $1 , email = $2 , is_verified = $3 WHERE id = $4`
+	query := `UPDATE users SET username = $1 , email = $2 , is_verified = $3 WHERE id = $4`
 
 	_, err := tx.ExecContext(ctx, query, user.Username, user.Email, user.IsVerified, user.ID)
 	if err != nil {

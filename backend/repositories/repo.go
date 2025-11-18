@@ -6,6 +6,7 @@ import (
 	"database/sql"
 
 	"github.com/google/uuid"
+	"go.uber.org/zap"
 )
 
 type Storage struct {
@@ -26,13 +27,12 @@ type Storage struct {
 		FindByEmail(ctx context.Context, email string) (*models.Mentor, error)
 		FindByUsername(ctx context.Context, username string) (*models.Mentor, error)
 		CreateAndInvite(ctx context.Context, token string, user *models.Mentor) error
-		create(tx *sql.Tx, ctx context.Context, user *models.Mentor) error
+		create(tx *sql.Tx, ctx context.Context, mentor *models.Mentor) error
 		createInvitation(tx *sql.Tx, ctx context.Context, userId uuid.UUID, token string) error
 		Activate(ctx context.Context, token string) error
-		getUserFromToken(tx *sql.Tx, ctx context.Context, token string) (*models.Mentor, error)
-		update(tx *sql.Tx, ctx context.Context, user *models.Mentor) error
+		getMentorFromToken(tx *sql.Tx, ctx context.Context, token string) (*models.Mentor, error)
+		update(tx *sql.Tx, ctx context.Context, mentor *models.Mentor) error
 		deleteInvitation(tx *sql.Tx, ctx context.Context, userId uuid.UUID) error
-		GetByEmail(ctx context.Context, email string) (*models.Mentor, error)
 		GetByID(ctx context.Context, id uuid.UUID) (*models.Mentor, error)
 	}
 	Role interface {
@@ -40,10 +40,14 @@ type Storage struct {
 	}
 }
 
-func NewStorage(db *sql.DB) Storage {
+func NewStorage(db *sql.DB, logger *zap.SugaredLogger) Storage {
 	return Storage{
-		Users: &UserRepository{DB: db},
-		Role:  &RoleRepository{DB: db},
+		Users: &UserRepository{DB: db,
+			logger: logger},
+		Mentor: &MentorRepository{DB: db,
+			logger: logger},
+		Role: &RoleRepository{DB: db,
+			logger: logger},
 	}
 }
 

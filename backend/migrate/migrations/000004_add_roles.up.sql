@@ -1,5 +1,5 @@
 CREATE TABLE IF NOT EXISTS role (
-    id BIGINT PRIMARY KEY,
+    id BIGSERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     level INT NOT NULL,
     description VARCHAR(255) NOT NULL
@@ -19,7 +19,7 @@ INSERT INTO role (name , level , description) VALUES (
 );
 
 INSERT INTO role (name , level , description) VALUES (
-    'mentor',
+    'moderator',
     2,
-    'Mentor user'
+    'Moderator user'
 );

@@ -20,13 +20,13 @@ func NewUserRoutes(controller controller.Controller) UserRoutes {
 func (ur UserRoutes) RegisterUserRoutes(chi_router *chi.Mux) {
 	chi_router.Route("/user", func(r chi.Router) {
 		r.Put("/activate/{token}", func(w http.ResponseWriter, r *http.Request) {
-			ur.controller.Users.Activate(w, r)
+			ur.controller.User.UserActivation(w, r)
 		})
 		r.Post("/login", func(w http.ResponseWriter, r *http.Request) {
-			ur.controller.Users.Login(w, r)
+			ur.controller.User.UserLogin(w, r)
 		})
 		r.Post("/signup", func(w http.ResponseWriter, r *http.Request) {
-			ur.controller.Users.SignUp(w, r)
+			ur.controller.User.UserSignUp(w, r)
 		})
 	})
 }

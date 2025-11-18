@@ -7,27 +7,32 @@ import (
 )
 
 type Controller struct {
-	Users interface {
-		SignUp(w http.ResponseWriter, r *http.Request)
-		Login(w http.ResponseWriter, r *http.Request)
-		Activate(w http.ResponseWriter, r *http.Request)
+	User interface {
+		UserSignUp(w http.ResponseWriter, r *http.Request)
+		UserLogin(w http.ResponseWriter, r *http.Request)
+		UserActivation(w http.ResponseWriter, r *http.Request)
 	}
 	Resume interface {
 		ProcessResume(w http.ResponseWriter, r *http.Request)
 	}
 	Mentor interface {
-		SignUp(w http.ResponseWriter, r *http.Request)
-		Login(w http.ResponseWriter, r *http.Request)
+		MentorSignUp(w http.ResponseWriter, r *http.Request)
+		MentorLogin(w http.ResponseWriter, r *http.Request)
+		MentorActivation(w http.ResponseWriter, r *http.Request)
 	}
 }
 
 func NewController(service services.Service, cfg config.Application) Controller {
 	return Controller{
-		Users: User{
+		User: User{
 			srv: service,
 			cfg: cfg,
 		},
 		Resume: Resume{
+			srv: service,
+			cfg: cfg,
+		},
+		Mentor: Mentor{
 			srv: service,
 			cfg: cfg,
 		},

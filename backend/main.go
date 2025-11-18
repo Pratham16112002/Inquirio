@@ -88,7 +88,7 @@ func main() {
 	cfg.Auth = auth.NewAuth(cfg.Store, sessionManager)
 
 	apiRouter := chi.NewRouter()
-	cfg.Store = repositories.NewStorage(db_conn)
+	cfg.Store = repositories.NewStorage(db_conn, logger)
 
 	// Handling users
 	logger.Infof("registering user routes")

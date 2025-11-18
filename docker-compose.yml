@@ -3,12 +3,12 @@ version: "3.9"
 services:
   postgres:
     image: postgres
-    container_name: inquiro-postgres-local
+    container_name: dhrona-postgres-local
     restart: always
     environment:
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: 1234
-      POSTGRES_DB: inquiro_db
+      POSTGRES_DB: dhrona_db
     ports:
       - "5432:5432"
     volumes:
